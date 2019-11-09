@@ -143,7 +143,7 @@ var LayerSwitcher = function (_Control) {
         button.setAttribute('class', 'layer-switcher-open-main');
         button.setAttribute('type', 'button');
         button.setAttribute('title', tipLabel);
-        if (buttonUDCChar !== '') buttonbutton.innerHTML = String.fromCharCode(buttonUDCChar);
+        if (buttonUDCChar !== '') button.innerHTML = String.fromCharCode(buttonUDCChar);
         element.appendChild(button);
 
         _this.panel = document.createElement('div');
