@@ -43,6 +43,7 @@ export default class LayerSwitcher extends Control {
         button.setAttribute('class', 'layer-switcher-open-main')
         button.setAttribute('type', 'button');
         button.setAttribute('title', tipLabel);
+        buttonb.innerHTML = 'X';
         element.appendChild(button);
 
         this.panel = document.createElement('div');
