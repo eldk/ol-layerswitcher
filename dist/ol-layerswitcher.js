@@ -137,7 +137,7 @@ var LayerSwitcher = function (_Control) {
         element.className = _this.hiddenClassName;
 
         var button = document.createElement('button');
-        button.setAttribute('class', 'layer-switcher-open');
+        button.setAttribute('class', 'layer-switcher-open-1');
         button.setAttribute('type', 'button');
         button.setAttribute('title', tipLabel);
         element.appendChild(button);
