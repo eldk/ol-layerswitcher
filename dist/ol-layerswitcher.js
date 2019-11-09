@@ -121,7 +121,7 @@ var LayerSwitcher = function (_Control) {
 
         var tipLabel = options.tipLabel ? options.tipLabel : 'Legend';
 
-        var buttonUDCChar = options.buttonUDCChar ? options.buttonUDCChar : '9776';
+        var buttonUDCChar = options.buttonUDCChar ? options.buttonUDCChar : '';
 
         var element = document.createElement('div');
 
