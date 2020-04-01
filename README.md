@@ -8,7 +8,7 @@ layers should have a `type` property set to `base`. Group layers
 a `fold` property set to either `open` or `close` will be displayed with a
 toggle. See [Examples](#examples) for usage.
 
-Compatible with OpenLayers version 3, 4 and 5 (see note in [Install - Parcel,
+Compatible with OpenLayers version 3, 4, 5 and 6 (see note in [Install - Parcel,
 Webpack etc.](#parcel-webpack-etc) regarding installing the appropriate version
 of `ol-layerswitcher` for OpenLayers).
 
@@ -42,13 +42,13 @@ The source for all examples can be found in [examples](examples).
 Load `ol-layerswitcher.js` after OpenLayers. The layerswitcher control is available as `LayerSwitcher` or `ol.control.LayerSwitcher`.
 
 ```HTML
-<script src="https://unpkg.com/ol-layerswitcher@3.4.0"></script>
+<script src="https://unpkg.com/ol-layerswitcher@3.5.0"></script>
 ```
 
 #### CSS
 
 ```HTML
-<link rel="stylesheet" href="https://unpkg.com/ol-layerswitcher@3.4.0/src/ol-layerswitcher.css" />
+<link rel="stylesheet" href="https://unpkg.com/ol-layerswitcher@3.5.0/src/ol-layerswitcher.css" />
 ```
 
 ### Parcel, Webpack etc.
@@ -102,10 +102,18 @@ See [the examples](./examples) for usage.
 **Parameters**
 
 -   `opt_options` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)** Control options, extends ol/control/Control~Control#options adding:
+    -   `opt_options.activationMode` **[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** Event to use on the button to collapse or expand the panel.
+          `'mouseover'` (default) the layerswitcher panel stays expanded while button or panel are hovered. 
+          `'click'` a click on the button toggles the layerswitcher visibility.
+    -   `opt_options.collapseLabel` **[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** Text label to use for the expanded layerswitcher button. E.g.:
+          `'»'` (default) or `'\u00BB'`, `'-'` or `'\u2212'`. Not visible if activation mode is `'mouseover'`
+    -   `opt_options.label` **[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** Text label to use for the collapsed layerswitcher button. E.g.:
+          `''` (default), `'«'` or `'\u00AB'`, `'+'`.
     -   `opt_options.tipLabel` **[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** the button tooltip.
     -   `opt_options.groupSelectStyle` **[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** either `'none'` - groups don't get a checkbox,
           `'children'` (default) groups have a checkbox and affect child visibility or
           `'group'` groups have a checkbox but do not alter child visibility (like QGIS).
+    -   `opt_options.reverse` **[boolean](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean)** Reverse the layer order. Defaults to true.
 
 #### setMap
 
@@ -163,3 +171,14 @@ MIT (c) Matt Walker.
 
 If you find the layer switcher useful you might also like the
 [ol-popup](https://github.com/walkermatt/ol-popup).
+
+## Publishing
+
+    npm run build
+    # Open ./tests/ in browser
+    # Open examples and manually test
+    # Update version number in `package.json`, `bower.json` and `README.md`
+    # Determine new version number (check current with `git tag --list`, check npm and GitHub)
+    git tag vX.Y.Z
+    git push origin master --tags
+    npm publish

@@ -9,11 +9,19 @@ var CSS_PREFIX = 'layer-switcher-';
  * @constructor
  * @extends {ol/control/Control~Control}
  * @param {Object} opt_options Control options, extends ol/control/Control~Control#options adding:
+ * @param {String} opt_options.activationMode Event to use on the button to collapse or expand the panel.
+ *   `'mouseover'` (default) the layerswitcher panel stays expanded while button or panel are hovered. 
+ *   `'click'` a click on the button toggles the layerswitcher visibility.
+ * @param {String} opt_options.collapseLabel Text label to use for the expanded layerswitcher button. E.g.:
+ *   `'»'` (default) or `'\u00BB'`, `'-'` or `'\u2212'`. Not visible if activation mode is `'mouseover'`
+ * @param {String} opt_options.label Text label to use for the collapsed layerswitcher button. E.g.:
+ *   `''` (default), `'«'` or `'\u00AB'`, `'+'`.
  * @param {String} opt_options.tipLabel the button tooltip.
  * @param {String} opt_options.buttonUDCChar the button Unicode Decimal Character Code.
  * @param {String} opt_options.groupSelectStyle either `'none'` - groups don't get a checkbox,
  *   `'children'` (default) groups have a checkbox and affect child visibility or
  *   `'group'` groups have a checkbox but do not alter child visibility (like QGIS).
+ * @param {boolean} opt_options.reverse Reverse the layer order. Defaults to true.
  */
 export default class LayerSwitcher extends Control {
 
@@ -31,7 +39,15 @@ export default class LayerSwitcher extends Control {
 
         super({element: element, target: options.target});
 
+        this.activationMode = options.activationMode || 'mouseover';
+
+        const collapseLabel = options.collapseLabel !== undefined ? options.collapseLabel : '\u00BB';
+
+        const label = options.label !== undefined ? options.label : '';
+
         this.groupSelectStyle = LayerSwitcher.getGroupSelectStyle(options.groupSelectStyle);
+
+        this.reverse = (options.reverse !== false);
 
         this.mapListeners = [];
 
@@ -56,6 +72,24 @@ export default class LayerSwitcher extends Control {
         LayerSwitcher.enableTouchScroll_(this.panel);
 
         var this_ = this;
+        
+        button.textContent = label;
+
+        if(this.activationMode == 'click') {
+            element.classList.add('activationModeClick');
+            button.onclick = function(e) {
+                e = e || window.event;
+                if (this_.element.classList.contains(this_.shownClassName)) {
+                    this_.hidePanel();
+                    button.textContent = label;
+                } else {
+                    this_.showPanel();
+                    button.textContent = collapseLabel;
+                }
+                e.preventDefault();
+            }
+            return;
+        }
 
         button.onmouseover = function(e) {
             this_.showPanel();
@@ -89,11 +123,12 @@ export default class LayerSwitcher extends Control {
         // Wire up listeners etc. and store reference to new map
         super.setMap(map);
         if (map) {
+            this.renderPanel();
+            if(this.activationMode == 'click') return;
             var this_ = this;
             this.mapListeners.push(map.on('pointerdown', function() {
                 this_.hidePanel();
             }));
-            this.renderPanel();
         }
     }
 
@@ -115,14 +150,14 @@ export default class LayerSwitcher extends Control {
             this.element.classList.remove(this.shownClassName);
         }
     }
-
+    
     /**
     * Re-draw the layer panel to represent the current state of the layers.
     */
     renderPanel() {
-        LayerSwitcher.renderPanel(this.getMap(), this.panel, {
-            groupSelectStyle: this.groupSelectStyle
-        });
+        this.dispatchEvent({ type: 'render' });
+        LayerSwitcher.renderPanel(this.getMap(), this.panel, { groupSelectStyle: this.groupSelectStyle, reverse: this.reverse });
+        this.dispatchEvent({ type: 'rendercomplete' });
     }
 
     /**
@@ -131,6 +166,10 @@ export default class LayerSwitcher extends Control {
     * @param {Element} panel The DOM Element into which the layer tree will be rendered
     */
     static renderPanel(map, panel, options) {
+        // Create the event.
+        var render_event = new Event('render');
+        // Dispatch the event.
+        panel.dispatchEvent(render_event);
 
         options = options || {};
 
@@ -165,6 +204,10 @@ export default class LayerSwitcher extends Control {
             LayerSwitcher.renderPanel(map, panel, options);
         });
 
+        // Create the event.
+        var rendercomplete_event = new Event('rendercomplete');
+        // Dispatch the event.
+        panel.dispatchEvent(rendercomplete_event);
     }
 
     static isBaseGroup(lyr) {
@@ -305,7 +348,9 @@ export default class LayerSwitcher extends Control {
               li.classList.add(CSS_PREFIX + lyr.get('fold'));
               const btn = document.createElement('button');
               btn.onclick = function (e) {
+                e = e || window.event;
                 LayerSwitcher.toggleFold_(lyr, li);
+                e.preventDefault();
               };
               li.appendChild(btn);
             }
@@ -374,7 +419,8 @@ export default class LayerSwitcher extends Control {
     * @param {Element} elm DOM element that children will be appended to.
     */
     static renderLayers_(map, lyr, elm, options, render) {
-        var lyrs = lyr.getLayers().getArray().slice().reverse();
+        var lyrs = lyr.getLayers().getArray().slice();
+        if(options.reverse) lyrs = lyrs.reverse();
         for (var i = 0, l; i < lyrs.length; i++) {
             l = lyrs[i];
             if (l.get('title')) {

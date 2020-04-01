@@ -103,11 +103,19 @@ var CSS_PREFIX = 'layer-switcher-';
  * @constructor
  * @extends {ol/control/Control~Control}
  * @param {Object} opt_options Control options, extends ol/control/Control~Control#options adding:
+ * @param {String} opt_options.activationMode Event to use on the button to collapse or expand the panel.
+ *   `'mouseover'` (default) the layerswitcher panel stays expanded while button or panel are hovered. 
+ *   `'click'` a click on the button toggles the layerswitcher visibility.
+ * @param {String} opt_options.collapseLabel Text label to use for the expanded layerswitcher button. E.g.:
+ *   `'»'` (default) or `'\u00BB'`, `'-'` or `'\u2212'`. Not visible if activation mode is `'mouseover'`
+ * @param {String} opt_options.label Text label to use for the collapsed layerswitcher button. E.g.:
+ *   `''` (default), `'«'` or `'\u00AB'`, `'+'`.
  * @param {String} opt_options.tipLabel the button tooltip.
  * @param {String} opt_options.buttonUDCChar the button Unicode Decimal Character Code.
  * @param {String} opt_options.groupSelectStyle either `'none'` - groups don't get a checkbox,
  *   `'children'` (default) groups have a checkbox and affect child visibility or
  *   `'group'` groups have a checkbox but do not alter child visibility (like QGIS).
+ * @param {boolean} opt_options.reverse Reverse the layer order. Defaults to true.
  */
 
 var LayerSwitcher = function (_Control) {
@@ -127,7 +135,15 @@ var LayerSwitcher = function (_Control) {
 
         var _this = possibleConstructorReturn(this, (LayerSwitcher.__proto__ || Object.getPrototypeOf(LayerSwitcher)).call(this, { element: element, target: options.target }));
 
+        _this.activationMode = options.activationMode || 'mouseover';
+
+        var collapseLabel = options.collapseLabel !== undefined ? options.collapseLabel : '\xBB';
+
+        var label = options.label !== undefined ? options.label : '';
+
         _this.groupSelectStyle = LayerSwitcher.getGroupSelectStyle(options.groupSelectStyle);
+
+        _this.reverse = options.reverse !== false;
 
         _this.mapListeners = [];
 
@@ -152,6 +168,24 @@ var LayerSwitcher = function (_Control) {
         LayerSwitcher.enableTouchScroll_(_this.panel);
 
         var this_ = _this;
+
+        button.textContent = label;
+
+        if (_this.activationMode == 'click') {
+            element.classList.add('activationModeClick');
+            button.onclick = function (e) {
+                e = e || window.event;
+                if (this_.element.classList.contains(this_.shownClassName)) {
+                    this_.hidePanel();
+                    button.textContent = label;
+                } else {
+                    this_.showPanel();
+                    button.textContent = collapseLabel;
+                }
+                e.preventDefault();
+            };
+            return possibleConstructorReturn(_this);
+        }
 
         button.onmouseover = function (e) {
             this_.showPanel();
@@ -190,11 +224,12 @@ var LayerSwitcher = function (_Control) {
             // Wire up listeners etc. and store reference to new map
             get(LayerSwitcher.prototype.__proto__ || Object.getPrototypeOf(LayerSwitcher.prototype), 'setMap', this).call(this, map);
             if (map) {
+                this.renderPanel();
+                if (this.activationMode == 'click') return;
                 var this_ = this;
                 this.mapListeners.push(map.on('pointerdown', function () {
                     this_.hidePanel();
                 }));
-                this.renderPanel();
             }
         }
 
@@ -230,9 +265,9 @@ var LayerSwitcher = function (_Control) {
     }, {
         key: 'renderPanel',
         value: function renderPanel() {
-            LayerSwitcher.renderPanel(this.getMap(), this.panel, {
-                groupSelectStyle: this.groupSelectStyle
-            });
+            this.dispatchEvent({ type: 'render' });
+            LayerSwitcher.renderPanel(this.getMap(), this.panel, { groupSelectStyle: this.groupSelectStyle, reverse: this.reverse });
+            this.dispatchEvent({ type: 'rendercomplete' });
         }
 
         /**
@@ -244,6 +279,10 @@ var LayerSwitcher = function (_Control) {
     }], [{
         key: 'renderPanel',
         value: function renderPanel(map, panel, options) {
+            // Create the event.
+            var render_event = new Event('render');
+            // Dispatch the event.
+            panel.dispatchEvent(render_event);
 
             options = options || {};
 
@@ -277,6 +316,11 @@ var LayerSwitcher = function (_Control) {
                 // console.log('render');
                 LayerSwitcher.renderPanel(map, panel, options);
             });
+
+            // Create the event.
+            var rendercomplete_event = new Event('rendercomplete');
+            // Dispatch the event.
+            panel.dispatchEvent(rendercomplete_event);
         }
     }, {
         key: 'isBaseGroup',
@@ -435,7 +479,9 @@ var LayerSwitcher = function (_Control) {
                     li.classList.add(CSS_PREFIX + lyr.get('fold'));
                     var btn = document.createElement('button');
                     btn.onclick = function (e) {
+                        e = e || window.event;
                         LayerSwitcher.toggleFold_(lyr, li);
+                        e.preventDefault();
                     };
                     li.appendChild(btn);
                 }
@@ -504,7 +550,8 @@ var LayerSwitcher = function (_Control) {
     }, {
         key: 'renderLayers_',
         value: function renderLayers_(map, lyr, elm, options, render) {
-            var lyrs = lyr.getLayers().getArray().slice().reverse();
+            var lyrs = lyr.getLayers().getArray().slice();
+            if (options.reverse) lyrs = lyrs.reverse();
             for (var i = 0, l; i < lyrs.length; i++) {
                 l = lyrs[i];
                 if (l.get('title')) {
